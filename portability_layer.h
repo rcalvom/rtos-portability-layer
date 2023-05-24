@@ -28,6 +28,15 @@ struct ListenPackage {
     int backlog;
 };
 
+struct ConnectPackage {
+    int sockfd;
+    union {
+        struct sockaddr_in addr;
+        struct sockaddr_in6 addr6;
+    };
+    socklen_t addrlen;
+};
+
 struct WritePackage {
     int sockfd;
     size_t count;
@@ -95,15 +104,15 @@ struct SyscallPackage {
 };
 
 struct packetdrill_syscalls {
-    void (*socket_syscall)(void);
-    void (*bind_syscall)(void);
-    void (*listen_syscall)(void);
-    void (*accept_syscall)(void);
-    void (*connect_syscall)(void);
-    void (*write_syscall)(void);
-    void (*read_syscall)(void);
-    void (*close_syscall)(void);
-    void (*init_syscall)(void);
+    int (*socket_syscall)(int domain);
+    int (*bind_syscall)(int index, unsigned short int port);
+    int (*listen_syscall)(int index);
+    struct SyscallResponsePackage (*accept_syscall)(int index);
+    int (*connect_syscall)(int index, struct in_addr address, unsigned short int port);
+    int (*write_syscall)(int index, void *buffer, unsigned long size);
+    int (*read_syscall)(int index);
+    int (*close_syscall)(int index);
+    int (*init_syscall)(void);
 };
 
 typedef void (*packetdrill_run_syscalls_fn)(struct packetdrill_syscalls*);

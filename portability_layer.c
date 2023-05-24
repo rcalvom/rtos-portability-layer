@@ -81,27 +81,33 @@ void run_syscalls(struct packetdrill_syscalls *interface){
             log_info("Packetdrill command received: %s", syscallPackage.syscallId);
 
             struct SyscallResponsePackage syscallResponse;
+            int result = 0;
             if(strcmp(syscallPackage.syscallId, "socket_create") == 0){
-                interface->socket_syscall();
+                result = interface->socket_syscall(syscallPackage.socketPackage.domain);
             } else if (strcmp(syscallPackage.syscallId, "socket_bind") == 0) {
-                interface->bind_syscall();
+                result = interface->bind_syscall(syscallPackage.bindPackage.sockfd, syscallPackage.bindPackage.addr.sin_port);
             } else if (strcmp(syscallPackage.syscallId, "socket_listen") == 0) {
-                interface->listen_syscall();
+                result = interface->listen_syscall(syscallPackage.listenPackage.sockfd);
             } else if (strcmp(syscallPackage.syscallId, "socket_accept") == 0) {
-                interface->accept_syscall();
+                struct SyscallResponsePackage response;
+                response = interface->accept_syscall(syscallPackage.acceptPackage.sockfd);
+                result = response.result;
+                syscallResponse.acceptResponse = response.acceptResponse;
             } else if (strcmp(syscallPackage.syscallId, "socket_connect") == 0) {
-                interface->connect_syscall();
+                result = interface->connect_syscall(syscallPackage.connectPackage.sockfd, syscallPackage.connectPackage.addr.sin_addr, syscallPackage.connectPackage.addr.sin_port);
             } else if (strcmp(syscallPackage.syscallId, "socket_write") == 0) {
-                interface->write_syscall();
+                result = interface->write_syscall(syscallPackage.writePackage.sockfd, syscallPackage.buffer, syscallPackage.bufferedCount);
             } else if (strcmp(syscallPackage.syscallId, "socket_read") == 0) {
-                interface->read_syscall();
+                result = interface->read_syscall(syscallPackage.readPackage.sockfd);
             } else if (strcmp(syscallPackage.syscallId, "socket_close") == 0){
-                interface->close_syscall();
+                result = interface->close_syscall(syscallPackage.closePackage.sockfd);
             } else if (strcmp(syscallPackage.syscallId, "freertos_init") == 0) {
-                interface->init_syscall();
+                result = interface->init_syscall();
             }
 
             log_info("Syscall response buffer received: %d...\n", syscallResponse.result);
+            syscallResponse.result = result;
+            
             ssize_t numWrote = send(cfd, &syscallResponse, sizeof(struct SyscallResponsePackage), MSG_NOSIGNAL);
             if (numWrote == -1) {
                 log_error("Error writing socket response with errno %d...\n", errno);
